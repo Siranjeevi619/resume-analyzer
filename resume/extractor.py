@@ -25,8 +25,8 @@ def extract_skills(text : str) -> list:
     keywords = ["python", "java", "spring", "react", "node",
         "mongodb", "sql", "docker", "aws", "software developer","git"]
     text_lower = text.lower()
-    skills = ()
+    skills = set()
     for skill in keywords:
         if skill in text_lower:
-            skills.__add__(skill)
+            skills.add(skill)
     return sorted(set(skills))

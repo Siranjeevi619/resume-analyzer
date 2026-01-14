@@ -1,7 +1,79 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
+import shutil
+import uuid
+import os
+
+from pydantic import BaseModel
+from typing import List
+
+from resume.parser import parse_resume
+from resume.extractor import extract_section, extract_skills
+from resume.schemas import ResumeSections
+from jd.analyzer import store_job_description, match_resume_with_jd
+from scoring.ats_scoring import calculate_ats_score
+
+class JDRequest(BaseModel):
+    job_description : str
+    
+class ATSRequest(BaseModel):
+    resume_text : str
+    resume_skills : List[str]
+    job_description : str
+    sections : dict
+    
 
 router = APIRouter()
 
-@router.get("/ping")
-def ping():
-    return {"message":"pong"}
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+
+@router.post("/jd/upload")
+def upload_jd(request:JDRequest):
+    chunks = store_job_description(request.job_description)
+    return {"message":"Job description stored", "chunks":chunks}
+
+
+@router.post("/jd/match")
+def match_resume(request : JDRequest):
+    result = match_resume_with_jd(request.job_description)
+    return [
+        {
+        "score":score,
+        "matched_text":doc.page_content
+        }
+        for doc, score in result
+    ]
+
+
+@router.post("/ats/score")
+def ats_score(request:ATSRequest):
+    return calculate_ats_score(
+            resume_text=request.resume_text,
+            resume_skills=request.resume_skills,
+            jd_text=request.job_description,
+            sections=request.sections
+        )
+
+
+@router.post("/resume/upload", response_model=ResumeSections)
+async def upload_resume(file: UploadFile = File(...)):
+    file_id = f"{uuid.uuid4()}_{file.filename}"
+    file_path = os.path.join(UPLOAD_DIR, file_id)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    raw_text = parse_resume(file_path)
+    sections = extract_section(raw_text)
+    skills = extract_skills(raw_text)
+
+    return ResumeSections(
+        summary=sections.get("summary"),
+        skills=skills,
+        experience=sections.get("experience"),
+        education=sections.get("education"),
+        projects=sections.get("projects"),
+        raw_text=raw_text
+    )
