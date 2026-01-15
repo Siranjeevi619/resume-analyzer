@@ -19,3 +19,4 @@ langchain-huggingface
 torch
 transformers 
 accelerate 
+streamlit
