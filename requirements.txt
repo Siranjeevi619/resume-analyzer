@@ -15,3 +15,7 @@ sentence-transformers
 langchain-text-splitters
 
 chromadb
+langchain-huggingface
+torch
+transformers 
+accelerate 

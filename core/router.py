@@ -11,6 +11,9 @@ from resume.extractor import extract_section, extract_skills
 from resume.schemas import ResumeSections
 from jd.analyzer import store_job_description, match_resume_with_jd
 from scoring.ats_scoring import calculate_ats_score
+from feedback.generator import generate_resume_feedback
+from dotenv import load_dotenv
+load_dotenv()
 
 class JDRequest(BaseModel):
     job_description : str
@@ -77,3 +80,16 @@ async def upload_resume(file: UploadFile = File(...)):
         projects=sections.get("projects"),
         raw_text=raw_text
     )
+
+
+class FeedbackRequest(BaseModel):
+    resume_text:str
+    resume_skills :  List[str]
+    job_description:str
+    ats_result:dict
+    
+
+@router.post("/feedback")
+def resume_feedback(request : FeedbackRequest):
+    return generate_resume_feedback(resume_text= request.resume_text, resume_skills=request.resume_skills,   job_description=request.job_description,
+        ats_result=request.ats_result)
