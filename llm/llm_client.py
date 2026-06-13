@@ -1,12 +1,10 @@
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+from langchain_groq import ChatGroq
 import os
 
 def implement_model():
-    endpoint = HuggingFaceEndpoint(
-        repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
-        task="conversational",
-        max_new_tokens=512,
+    return ChatGroq(
+        model="llama-3.1-8b-instant",
         temperature=0.3,
-        huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+        max_tokens=512,
+        groq_api_key=os.getenv("GROQ_API_KEY")
     )
-    return ChatHuggingFace(llm=endpoint)
